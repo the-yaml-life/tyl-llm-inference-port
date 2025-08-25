@@ -71,7 +71,10 @@ async fn example_with_mock() -> Result<(), Box<dyn std::error::Error>> {
         response.metadata.token_usage.completion_tokens,
         response.metadata.token_usage.total_tokens
     );
-    println!("  Processing time: {}ms\n", response.metadata.processing_time_ms);
+    println!(
+        "  Processing time: {}ms\n",
+        response.metadata.processing_time_ms
+    );
 
     // Example 2: Creative writing with parameters
     println!("🎨 Example 2: Creative Writing Template");
@@ -86,7 +89,8 @@ async fn example_with_mock() -> Result<(), Box<dyn std::error::Error>> {
         "Write a short story about a {{character}} who must {{quest}} in an {{setting}}",
         story_params,
         ModelType::Creative,
-    ).with_temperature(0.9);
+    )
+    .with_temperature(0.9);
 
     println!("Story Template: {}", story_request.template);
     println!("Story Parameters: {:?}", story_request.parameters);
@@ -113,7 +117,10 @@ async fn example_with_mock() -> Result<(), Box<dyn std::error::Error>> {
     let reasoning_response = inference_service.infer(reasoning_request).await?;
 
     println!("Analysis Response:");
-    println!("{}", serde_json::to_string_pretty(&reasoning_response.content)?);
+    println!(
+        "{}",
+        serde_json::to_string_pretty(&reasoning_response.content)?
+    );
 
     // Example 4: Fast responses for simple queries
     println!("\n⚡ Example 4: Fast Response Template");
@@ -132,7 +139,10 @@ async fn example_with_mock() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("Quick Response:");
     println!("{}", serde_json::to_string_pretty(&quick_response.content)?);
-    println!("Processing time: {}ms", quick_response.metadata.processing_time_ms);
+    println!(
+        "Processing time: {}ms",
+        quick_response.metadata.processing_time_ms
+    );
 
     // Example 5: Complex template with multiple parameters
     println!("\n🔧 Example 5: Complex Multi-Parameter Template");
@@ -142,7 +152,10 @@ async fn example_with_mock() -> Result<(), Box<dyn std::error::Error>> {
     complex_params.insert("user_name".to_string(), "Alice".to_string());
     complex_params.insert("user_role".to_string(), "senior developer".to_string());
     complex_params.insert("project".to_string(), "e-commerce platform".to_string());
-    complex_params.insert("technology".to_string(), "microservices architecture".to_string());
+    complex_params.insert(
+        "technology".to_string(),
+        "microservices architecture".to_string(),
+    );
     complex_params.insert("timeline".to_string(), "3 months".to_string());
 
     let complex_request = InferenceRequest::new(
@@ -157,7 +170,10 @@ async fn example_with_mock() -> Result<(), Box<dyn std::error::Error>> {
     let complex_response = inference_service.infer(complex_request).await?;
 
     println!("\nComplex Response:");
-    println!("{}", serde_json::to_string_pretty(&complex_response.content)?);
+    println!(
+        "{}",
+        serde_json::to_string_pretty(&complex_response.content)?
+    );
 
     // Example 6: Custom JSON response
     println!("\n📋 Example 6: Custom JSON Response");
@@ -172,7 +188,10 @@ async fn example_with_mock() -> Result<(), Box<dyn std::error::Error>> {
     let custom_response = custom_service.infer(custom_request).await?;
 
     println!("Custom JSON Response:");
-    println!("{}", serde_json::to_string_pretty(&custom_response.content)?);
+    println!(
+        "{}",
+        serde_json::to_string_pretty(&custom_response.content)?
+    );
 
     // Example 7: Health checks and service info
     println!("\n🏥 Example 7: Service Health and Info");

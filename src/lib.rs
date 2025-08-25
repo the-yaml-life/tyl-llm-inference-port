@@ -161,7 +161,10 @@ pub mod inference_errors {
 
     /// Create a template processing error
     pub fn template_processing_failed(message: impl Into<String>) -> TylError {
-        TylError::validation("template", format!("Template processing failed: {}", message.into()))
+        TylError::validation(
+            "template",
+            format!("Template processing failed: {}", message.into()),
+        )
     }
 }
 
@@ -237,9 +240,9 @@ pub struct InferenceRequest {
 
 impl InferenceRequest {
     pub fn new(
-        template: impl Into<String>, 
-        parameters: HashMap<String, String>, 
-        model_type: ModelType
+        template: impl Into<String>,
+        parameters: HashMap<String, String>,
+        model_type: ModelType,
     ) -> Self {
         Self {
             template: template.into(),
@@ -317,11 +320,7 @@ pub struct ResponseMetadata {
 }
 
 impl ResponseMetadata {
-    pub fn new(
-        model: String,
-        token_usage: TokenUsage,
-        processing_time_ms: u64,
-    ) -> Self {
+    pub fn new(model: String, token_usage: TokenUsage, processing_time_ms: u64) -> Self {
         Self {
             model,
             token_usage,
@@ -347,14 +346,8 @@ pub struct InferenceResponse {
 }
 
 impl InferenceResponse {
-    pub fn new(
-        content: serde_json::Value,
-        metadata: ResponseMetadata,
-    ) -> Self {
-        Self {
-            content,
-            metadata,
-        }
+    pub fn new(content: serde_json::Value, metadata: ResponseMetadata) -> Self {
+        Self { content, metadata }
     }
 
     /// Create response with string content (will be converted to JSON string value)
@@ -381,7 +374,7 @@ impl InferenceResponse {
             Ok(json) => json,
             Err(_) => serde_json::Value::String(content),
         };
-        
+
         Self {
             content: json_content,
             metadata: ResponseMetadata::new(model, token_usage, processing_time_ms),
@@ -420,7 +413,7 @@ mod tests {
     fn test_inference_request_creation() {
         let mut params = HashMap::new();
         params.insert("name".to_string(), "Juan".to_string());
-        
+
         let request = InferenceRequest::new("Hello {{name}}!", params, ModelType::General)
             .with_max_tokens(100)
             .with_temperature(0.5);
@@ -437,10 +430,14 @@ mod tests {
         let mut params = HashMap::new();
         params.insert("name".to_string(), "Juan".to_string());
         params.insert("age".to_string(), "30".to_string());
-        
-        let request = InferenceRequest::new("Hello {{name}}, you are {{age}} years old!", params, ModelType::General);
+
+        let request = InferenceRequest::new(
+            "Hello {{name}}, you are {{age}} years old!",
+            params,
+            ModelType::General,
+        );
         let rendered = request.render_template();
-        
+
         assert_eq!(rendered, "Hello Juan, you are 30 years old!");
     }
 
@@ -495,7 +492,10 @@ mod tests {
             500,
         );
 
-        assert_eq!(response.content, serde_json::Value::String("Generated text".to_string()));
+        assert_eq!(
+            response.content,
+            serde_json::Value::String("Generated text".to_string())
+        );
         assert_eq!(response.metadata.model, "gpt-4o");
         assert_eq!(response.metadata.token_usage.total_tokens, 30);
         assert_eq!(response.metadata.processing_time_ms, 500);
@@ -504,7 +504,7 @@ mod tests {
     #[test]
     fn test_inference_response_json_fallback() {
         let token_usage = TokenUsage::new(5, 15);
-        
+
         // Valid JSON
         let json_response = InferenceResponse::from_text_with_json_fallback(
             "{\"message\": \"Hello\"}".to_string(),
@@ -512,14 +512,17 @@ mod tests {
             token_usage.clone(),
             250,
         );
-        
+
         match &json_response.content {
             serde_json::Value::Object(obj) => {
-                assert_eq!(obj.get("message"), Some(&serde_json::Value::String("Hello".to_string())));
-            },
+                assert_eq!(
+                    obj.get("message"),
+                    Some(&serde_json::Value::String("Hello".to_string()))
+                );
+            }
             _ => panic!("Expected JSON object"),
         }
-        
+
         // Invalid JSON (fallback to string)
         let text_response = InferenceResponse::from_text_with_json_fallback(
             "Not valid JSON".to_string(),
@@ -527,19 +530,18 @@ mod tests {
             token_usage,
             250,
         );
-        
-        assert_eq!(text_response.content, serde_json::Value::String("Not valid JSON".to_string()));
+
+        assert_eq!(
+            text_response.content,
+            serde_json::Value::String("Not valid JSON".to_string())
+        );
     }
 
     #[test]
     fn test_response_metadata() {
         let token_usage = TokenUsage::new(25, 50);
-        let metadata = ResponseMetadata::new(
-            "claude-3-5-sonnet".to_string(),
-            token_usage,
-            750,
-        );
-        
+        let metadata = ResponseMetadata::new("claude-3-5-sonnet".to_string(), token_usage, 750);
+
         assert_eq!(metadata.model, "claude-3-5-sonnet");
         assert_eq!(metadata.token_usage.total_tokens, 75);
         assert_eq!(metadata.processing_time_ms, 750);

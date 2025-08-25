@@ -64,7 +64,10 @@ impl MockInferenceService {
                 )
             }
             ModelType::Fast => {
-                format!(r#"{{"response": "Quick response: {}"}}"#, rendered_template.replace('"', r#"\""#))
+                format!(
+                    r#"{{"response": "Quick response: {}"}}"#,
+                    rendered_template.replace('"', r#"\""#)
+                )
             }
             ModelType::Creative => {
                 format!(
@@ -91,7 +94,10 @@ impl MockInferenceService {
                 )
             }
             ModelType::General => {
-                format!(r#"{{"message": "Mock completion for: {}"}}"#, rendered_template.replace('"', r#"\""#))
+                format!(
+                    r#"{{"message": "Mock completion for: {}"}}"#,
+                    rendered_template.replace('"', r#"\""#)
+                )
             }
         }
     }
@@ -171,14 +177,14 @@ mod tests {
     #[tokio::test]
     async fn test_mock_inference_service_basic() {
         let service = MockInferenceService::new().with_latency(10);
-        
+
         let mut params = HashMap::new();
         params.insert("name".to_string(), "Juan".to_string());
-        
+
         let request = InferenceRequest::new("Hello {{name}}!", params, ModelType::General);
 
         let response = service.infer(request).await.unwrap();
-        
+
         // Should be JSON response
         match &response.content {
             serde_json::Value::Object(obj) => {
@@ -186,7 +192,7 @@ mod tests {
             }
             _ => panic!("Expected JSON object response"),
         }
-        
+
         assert!(response.metadata.processing_time_ms >= 10);
         assert_eq!(response.metadata.model, "gpt-4o-mini");
     }
@@ -194,14 +200,14 @@ mod tests {
     #[tokio::test]
     async fn test_mock_inference_service_coding() {
         let service = MockInferenceService::new().with_latency(5);
-        
+
         let mut params = HashMap::new();
         params.insert("task".to_string(), "print hello world".to_string());
-        
+
         let request = InferenceRequest::new("Generate code to {{task}}", params, ModelType::Coding);
 
         let response = service.infer(request).await.unwrap();
-        
+
         match &response.content {
             serde_json::Value::Object(obj) => {
                 assert!(obj.get("code").is_some());
@@ -215,14 +221,14 @@ mod tests {
     #[tokio::test]
     async fn test_mock_inference_service_reasoning() {
         let service = MockInferenceService::new();
-        
+
         let mut params = HashMap::new();
         params.insert("problem".to_string(), "solve this puzzle".to_string());
-        
+
         let request = InferenceRequest::new("Please {{problem}}", params, ModelType::Reasoning);
 
         let response = service.infer(request).await.unwrap();
-        
+
         match &response.content {
             serde_json::Value::Object(obj) => {
                 assert!(obj.get("analysis").is_some());
@@ -237,16 +243,22 @@ mod tests {
     async fn test_mock_service_custom_response() {
         let custom_json = r#"{"custom": "test response", "number": 42}"#;
         let service = MockInferenceService::new().with_custom_response(custom_json);
-        
+
         let params = HashMap::new();
         let request = InferenceRequest::new("Any template", params, ModelType::General);
 
         let response = service.infer(request).await.unwrap();
-        
+
         match &response.content {
             serde_json::Value::Object(obj) => {
-                assert_eq!(obj.get("custom"), Some(&serde_json::Value::String("test response".to_string())));
-                assert_eq!(obj.get("number"), Some(&serde_json::Value::Number(serde_json::Number::from(42))));
+                assert_eq!(
+                    obj.get("custom"),
+                    Some(&serde_json::Value::String("test response".to_string()))
+                );
+                assert_eq!(
+                    obj.get("number"),
+                    Some(&serde_json::Value::Number(serde_json::Number::from(42)))
+                );
             }
             _ => panic!("Expected JSON object response"),
         }
@@ -255,15 +267,16 @@ mod tests {
     #[tokio::test]
     async fn test_mock_service_template_rendering() {
         let service = MockInferenceService::new();
-        
+
         let mut params = HashMap::new();
         params.insert("user".to_string(), "Alice".to_string());
         params.insert("action".to_string(), "coding".to_string());
-        
-        let request = InferenceRequest::new("User {{user}} is {{action}}", params, ModelType::General);
+
+        let request =
+            InferenceRequest::new("User {{user}} is {{action}}", params, ModelType::General);
 
         let response = service.infer(request).await.unwrap();
-        
+
         // The rendered template should be included in the response
         let response_str = response.content.to_string();
         assert!(response_str.contains("User Alice is coding"));
@@ -301,10 +314,10 @@ mod tests {
     #[tokio::test]
     async fn test_mock_service_model_override() {
         let service = MockInferenceService::new();
-        
+
         let params = HashMap::new();
-        let request = InferenceRequest::new("Test", params, ModelType::General)
-            .with_model("custom-model");
+        let request =
+            InferenceRequest::new("Test", params, ModelType::General).with_model("custom-model");
 
         let response = service.infer(request).await.unwrap();
         assert_eq!(response.metadata.model, "custom-model");
@@ -315,12 +328,12 @@ mod tests {
         // Test with invalid JSON that should fallback to string
         let invalid_json = "This is not valid JSON { incomplete";
         let service = MockInferenceService::new().with_custom_response(invalid_json);
-        
+
         let params = HashMap::new();
         let request = InferenceRequest::new("Test", params, ModelType::General);
 
         let response = service.infer(request).await.unwrap();
-        
+
         match &response.content {
             serde_json::Value::String(s) => {
                 assert_eq!(s, invalid_json);

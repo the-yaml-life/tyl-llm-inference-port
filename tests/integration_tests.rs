@@ -36,7 +36,8 @@ async fn test_inference_service_integration() {
     let mut params = HashMap::new();
     params.insert("language".to_string(), "Rust".to_string());
 
-    let request = InferenceRequest::new("Write a {{language}} function", params, ModelType::General);
+    let request =
+        InferenceRequest::new("Write a {{language}} function", params, ModelType::General);
     let response = service.infer(request).await;
     assert!(response.is_ok());
 
@@ -85,19 +86,26 @@ fn test_template_request_builder_patterns() {
     params.insert("name".to_string(), "Alice".to_string());
     params.insert("task".to_string(), "code review".to_string());
 
-    let request = InferenceRequest::new("Hello {{name}}, please help with {{task}}", params, ModelType::Coding)
-        .with_model("custom-model")
-        .with_max_tokens(500)
-        .with_temperature(0.8)
-        .with_metadata("context", "test");
+    let request = InferenceRequest::new(
+        "Hello {{name}}, please help with {{task}}",
+        params,
+        ModelType::Coding,
+    )
+    .with_model("custom-model")
+    .with_max_tokens(500)
+    .with_temperature(0.8)
+    .with_metadata("context", "test");
 
-    assert_eq!(request.template, "Hello {{name}}, please help with {{task}}");
+    assert_eq!(
+        request.template,
+        "Hello {{name}}, please help with {{task}}"
+    );
     assert_eq!(request.model_type, ModelType::Coding);
     assert_eq!(request.model_override, Some("custom-model".to_string()));
     assert_eq!(request.max_tokens, Some(500));
     assert_eq!(request.temperature, Some(0.8));
     assert_eq!(request.metadata.get("context"), Some(&"test".to_string()));
-    
+
     // Test template rendering
     let rendered = request.render_template();
     assert_eq!(rendered, "Hello Alice, please help with code review");
@@ -123,7 +131,8 @@ fn test_template_rendering() {
     extra_params.insert("used".to_string(), "yes".to_string());
     extra_params.insert("unused".to_string(), "no".to_string());
 
-    let request = InferenceRequest::new("Only {{used}} parameter", extra_params, ModelType::General);
+    let request =
+        InferenceRequest::new("Only {{used}} parameter", extra_params, ModelType::General);
     assert_eq!(request.render_template(), "Only yes parameter");
 }
 
@@ -163,7 +172,7 @@ async fn test_trait_object_usage() {
     // Test using services as trait objects
     let inference_service: Box<dyn InferenceService> =
         Box::new(MockInferenceService::new().with_latency(1));
-    
+
     let params = HashMap::new();
     let request = InferenceRequest::new("Test template", params, ModelType::Fast);
     let response = inference_service.infer(request).await;
@@ -174,11 +183,13 @@ async fn test_trait_object_usage() {
 fn test_temperature_clamping() {
     // Test that temperature values are properly clamped
     let params = HashMap::new();
-    
-    let request = InferenceRequest::new("Test", params.clone(), ModelType::General).with_temperature(2.0); // Should be clamped to 1.0
+
+    let request =
+        InferenceRequest::new("Test", params.clone(), ModelType::General).with_temperature(2.0); // Should be clamped to 1.0
     assert_eq!(request.temperature, Some(1.0));
 
-    let request = InferenceRequest::new("Test", params.clone(), ModelType::General).with_temperature(-0.5); // Should be clamped to 0.0
+    let request =
+        InferenceRequest::new("Test", params.clone(), ModelType::General).with_temperature(-0.5); // Should be clamped to 0.0
     assert_eq!(request.temperature, Some(0.0));
 
     let request = InferenceRequest::new("Test", params, ModelType::General).with_temperature(0.7); // Should remain as-is
@@ -222,7 +233,7 @@ async fn test_concurrent_requests() {
             tokio::spawn(async move {
                 let mut params = HashMap::new();
                 params.insert("id".to_string(), i.to_string());
-                
+
                 let request = InferenceRequest::new("Request {{id}}", params, ModelType::Fast);
                 service.infer(request).await
             })
@@ -257,7 +268,7 @@ async fn test_json_response_handling() {
     // Coding model should produce structured code response
     let request = InferenceRequest::new("Generate code", params.clone(), ModelType::Coding);
     let response = service.infer(request).await.unwrap();
-    
+
     if let serde_json::Value::Object(obj) = &response.content {
         assert!(obj.get("code").is_some());
         assert!(obj.get("language").is_some());
@@ -268,7 +279,7 @@ async fn test_json_response_handling() {
     // Reasoning model should produce structured reasoning response
     let request = InferenceRequest::new("Analyze problem", params.clone(), ModelType::Reasoning);
     let response = service.infer(request).await.unwrap();
-    
+
     if let serde_json::Value::Object(obj) = &response.content {
         assert!(obj.get("analysis").is_some());
         assert!(obj.get("reasoning_steps").is_some());
@@ -285,16 +296,25 @@ async fn test_custom_json_parsing() {
     // Test with valid JSON
     let valid_json = r#"{"message": "Hello", "status": "success", "data": {"count": 42}}"#;
     let service = MockInferenceService::new().with_custom_response(valid_json);
-    
+
     let params = HashMap::new();
     let request = InferenceRequest::new("Test", params, ModelType::General);
     let response = service.infer(request).await.unwrap();
-    
+
     if let serde_json::Value::Object(obj) = &response.content {
-        assert_eq!(obj.get("message"), Some(&serde_json::Value::String("Hello".to_string())));
-        assert_eq!(obj.get("status"), Some(&serde_json::Value::String("success".to_string())));
+        assert_eq!(
+            obj.get("message"),
+            Some(&serde_json::Value::String("Hello".to_string()))
+        );
+        assert_eq!(
+            obj.get("status"),
+            Some(&serde_json::Value::String("success".to_string()))
+        );
         if let Some(serde_json::Value::Object(data)) = obj.get("data") {
-            assert_eq!(data.get("count"), Some(&serde_json::Value::Number(serde_json::Number::from(42))));
+            assert_eq!(
+                data.get("count"),
+                Some(&serde_json::Value::Number(serde_json::Number::from(42)))
+            );
         }
     } else {
         panic!("Expected JSON object");
@@ -303,11 +323,11 @@ async fn test_custom_json_parsing() {
     // Test with invalid JSON (should fallback to string)
     let invalid_json = "Not valid JSON at all";
     let service = MockInferenceService::new().with_custom_response(invalid_json);
-    
+
     let params = HashMap::new();
     let request = InferenceRequest::new("Test", params, ModelType::General);
     let response = service.infer(request).await.unwrap();
-    
+
     if let serde_json::Value::String(s) = &response.content {
         assert_eq!(s, "Not valid JSON at all");
     } else {
@@ -332,13 +352,14 @@ async fn test_complex_template_parameters() {
     let complex_template = "Hi {{user_name}}! As a {{user_age}}-year-old {{user_job}}, I need help with {{project_name}} built in {{technology}}.";
 
     let request = InferenceRequest::new(complex_template, params, ModelType::General);
-    
-    let expected_rendering = "Hi Bob! As a 25-year-old software engineer, I need help with AI assistant built in Rust.";
+
+    let expected_rendering =
+        "Hi Bob! As a 25-year-old software engineer, I need help with AI assistant built in Rust.";
     assert_eq!(request.render_template(), expected_rendering);
 
     let response = service.infer(request).await.unwrap();
     assert!(!response.content.is_null());
-    
+
     // The rendered template should be reflected in the response somehow
     let response_str = response.content.to_string();
     assert!(response_str.contains("Bob"));
@@ -350,16 +371,16 @@ fn test_response_metadata_structure() {
     use tyl_llm_inference_port::{ResponseMetadata, TokenUsage};
 
     let token_usage = TokenUsage::new(100, 200);
-    let metadata = ResponseMetadata::new(
-        "test-model".to_string(),
-        token_usage,
-        1000,
-    ).with_metadata("custom_field", "custom_value");
+    let metadata = ResponseMetadata::new("test-model".to_string(), token_usage, 1000)
+        .with_metadata("custom_field", "custom_value");
 
     assert_eq!(metadata.model, "test-model");
     assert_eq!(metadata.token_usage.prompt_tokens, 100);
     assert_eq!(metadata.token_usage.completion_tokens, 200);
     assert_eq!(metadata.token_usage.total_tokens, 300);
     assert_eq!(metadata.processing_time_ms, 1000);
-    assert_eq!(metadata.metadata.get("custom_field"), Some(&"custom_value".to_string()));
+    assert_eq!(
+        metadata.metadata.get("custom_field"),
+        Some(&"custom_value".to_string())
+    );
 }
